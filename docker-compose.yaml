@@ -5,11 +5,10 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - .:/var/www/html
-    environment:
-      - APP_ENV=dev
-      - DATABASE_URL=postgres://db_user:db_password@database:5432/db_name
     depends_on:
       - database
 
@@ -28,11 +27,11 @@ services:
   database:
     image: postgres:13-alpine
     environment:
-      POSTGRES_USER: db_user
-      POSTGRES_PASSWORD: db_password
-      POSTGRES_DB: db_name
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - online_store_db:/var/lib/postgresql/data
 
 volumes:
-  db_data:
+  online_store_db:
