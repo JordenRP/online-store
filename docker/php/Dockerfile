@@ -1,12 +1,13 @@
 FROM php:8.2-fpm-alpine
 
-# Добавьте аргументы для идентификаторов пользователя и группы
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-
 # Создайте нового пользователя с указанными идентификаторами
-RUN addgroup -g ${GROUP_ID} user && \
-    adduser -D -u ${USER_ID} -G user user
+ARG PUID=1000
+ARG PGID=1000
+RUN apk --no-cache add shadow && \
+    groupmod -o -g ${PGID} www-data && \
+    usermod -o -u ${PUID} -g www-data www-data
+
+USER root
 
 # Установите необходимые пакеты и PHP-расширения
 RUN apk add --no-cache \
@@ -17,6 +18,8 @@ RUN apk add --no-cache \
         postgresql-dev \
         zlib-dev \
         libzip-dev \
+        bash \
+        git \
     && docker-php-ext-configure intl \
     && docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install \
@@ -25,6 +28,9 @@ RUN apk add --no-cache \
         pdo \
         pdo_pgsql \
         zip
+
+RUN curl -sS https://get.symfony.com/cli/installer | bash \
+    && mv /root/.symfony5/bin/symfony /usr/local/bin/symfony
 
 # Установите Xdebug
 RUN apk add --no-cache $PHPIZE_DEPS linux-headers \
@@ -36,5 +42,7 @@ COPY docker/php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 # Установите Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+USER www-data
 
 WORKDIR /var/www/html
